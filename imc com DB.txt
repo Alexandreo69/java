@@ -1,0 +1,208 @@
+para criar o BD
+CREATE DATABASE imc;
+USE imc;
+
+CREATE TABLE usuario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(50),
+    peso DOUBLE,
+    altura DOUBLE,
+    imc DOUBLE
+);
+
+arquivo
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+class Pessoa {
+    private String nome;
+    private double peso;
+    private double altura;
+    private double imc;
+
+    // Construtor
+    public Pessoa(String nome, double peso, double altura) {
+        this.nome = nome;
+        this.peso = peso;
+        this.altura = altura;
+        this.imc = calcularIMC();
+    }
+
+    private double calcularIMC() {
+        return peso / (altura * altura);
+    }
+
+    public String getNome() { return nome; }
+    public double getPeso() { return peso; }
+    public double getAltura() { return altura; }
+    public double getIMC() { return imc; }
+
+    public void exibirDados() {
+        System.out.printf("Nome: %-10s | Peso: %.2f kg | Altura: %.2f m | IMC: %.2f%n", nome, peso, altura, imc);
+    }
+}
+
+// Classe responsável pela comunicação com o banco
+class BancoDeDados {
+    private Connection conexao;
+
+    // Abre a conexão com o banco MySQL
+    public void conectar() {
+        try {
+            String url = "jdbc:mysql://localhost:3306/imc";
+            String usuario = "aluno";
+            String senha = "aluno";
+            conexao = DriverManager.getConnection(url, usuario, senha);
+            System.out.println("✅ Conectado ao banco de dados com sucesso!");
+        } catch (SQLException e) {
+            System.out.println("❌ Erro ao conectar ao banco: " + e.getMessage());
+        }
+    }
+
+    // Fecha a conexão
+    public void desconectar() {
+        try {
+            if (conexao != null && !conexao.isClosed()) {
+                conexao.close();
+            }
+        } catch (SQLException e) {
+            System.out.println("Erro ao fechar conexão: " + e.getMessage());
+        }
+    }
+
+    // Insere uma pessoa no banco
+    public void inserirPessoa(Pessoa p) {
+        String sql = "INSERT INTO usuario (nome, peso, altura, imc) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, p.getNome());
+            stmt.setDouble(2, p.getPeso());
+            stmt.setDouble(3, p.getAltura());
+            stmt.setDouble(4, p.getIMC());
+            stmt.executeUpdate();
+            System.out.println("✅ Pessoa inserida no banco de dados!");
+        } catch (SQLException e) {
+            System.out.println("❌ Erro ao inserir pessoa: " + e.getMessage());
+        }
+    }
+
+    // Lê todos os registros do banco
+    public ArrayList<Pessoa> carregarPessoas() {
+        ArrayList<Pessoa> lista = new ArrayList<>();
+        String sql = "SELECT nome, peso, altura, imc FROM usuario";
+        try (Statement stmt = conexao.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String nome = rs.getString("nome");
+                double peso = rs.getDouble("peso");
+                double altura = rs.getDouble("altura");
+                lista.add(new Pessoa(nome, peso, altura));
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Erro ao carregar pessoas: " + e.getMessage());
+        }
+        return lista;
+    }
+
+    // Busca pessoa por nome
+    public Pessoa buscarPorNome(String nomeBuscado) {
+        String sql = "SELECT nome, peso, altura, imc FROM usuario WHERE LOWER(nome) = LOWER(?)";
+        try (PreparedStatement stmt = conexao.prepareStatement(sql)) {
+            stmt.setString(1, nomeBuscado);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                String nome = rs.getString("nome");
+                double peso = rs.getDouble("peso");
+                double altura = rs.getDouble("altura");
+                return new Pessoa(nome, peso, altura);
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Erro na consulta: " + e.getMessage());
+        }
+        return null;
+    }
+}
+
+// Classe principal
+public class CadastroIMC {
+    public static void main(String[] args) {
+        Scanner leia = new Scanner(System.in);
+        ArrayList<Pessoa> pessoas = new ArrayList<>();
+        BancoDeDados banco = new BancoDeDados();
+
+        banco.conectar();
+
+        // Carrega dados do banco ao iniciar
+        pessoas = banco.carregarPessoas();
+        System.out.println("\n📋 " + pessoas.size() + " pessoas carregadas do banco de dados.");
+
+        int opcao;
+
+        do {
+            System.out.println("\n=== MENU CADASTRO DE IMC ===");
+            System.out.println("1 - Cadastrar nova pessoa");
+            System.out.println("2 - Mostrar todos os cadastrados");
+            System.out.println("3 - Consultar pessoa por nome");
+            System.out.println("4 - Sair");
+            System.out.print("Escolha uma opção: ");
+            opcao = leia.nextInt();
+            leia.nextLine(); // limpar buffer
+
+            switch (opcao) {
+                case 1:
+                    System.out.println("\n--- CADASTRAR PESSOA ---");
+                    System.out.print("Nome: ");
+                    String nome = leia.nextLine();
+                    System.out.print("Peso (kg): ");
+                    double peso = leia.nextDouble();
+                    System.out.print("Altura (m): ");
+                    double altura = leia.nextDouble();
+                    leia.nextLine();
+
+                    Pessoa nova = new Pessoa(nome, peso, altura);
+                    pessoas.add(nova);
+                    banco.inserirPessoa(nova);
+                    System.out.println("Pessoa cadastrada com sucesso!");
+                    break;
+
+                case 2:
+                    System.out.println("\n=== LISTA DE PESSOAS CADASTRADAS ===");
+                    if (pessoas.isEmpty()) {
+                        System.out.println("Nenhuma pessoa cadastrada ainda.");
+                    } else {
+                        for (Pessoa p : pessoas) {
+                            p.exibirDados();
+                        }
+                    }
+                    break;
+
+                case 3:
+                    System.out.print("\nDigite o nome da pessoa que deseja consultar: ");
+                    String nomeBuscado = leia.nextLine();
+
+                    Pessoa encontrada = banco.buscarPorNome(nomeBuscado);
+                    if (encontrada != null) {
+                        System.out.println("\n--- Dados encontrados ---");
+                        System.out.printf("Nome: %s%nPeso: %.2f kg%nAltura: %.2f m%nIMC: %.2f%n",
+                                encontrada.getNome(), encontrada.getPeso(),
+                                encontrada.getAltura(), encontrada.getIMC());
+                    } else {
+                        System.out.println("Nome não encontrado na tabela.");
+                    }
+                    break;
+
+                case 4:
+                    System.out.println("\nEncerrando o programa...");
+                    banco.desconectar();
+                    break;
+
+                default:
+                    System.out.println("\nOpção inválida. Tente novamente!");
+            }
+
+        } while (opcao != 4);
+
+        leia.close();
+    }
+}
