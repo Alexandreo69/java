@@ -1,0 +1,19 @@
+crie um tutorial para os alunos montarem uma rede no packet tracer que contenha 2 roteadores cisco, e 3 redes.
+
+Rede A: 10.0.1.0/8 terá um servidor de DHCP na máquina 10.0.1.2/8
+deverá ter um switch como concentrador.
+deverá conter 2 desktop com placas cabeadas FastEthernet com DHCP.
+O IP na porta FastEthernet0/0 do roteador1 será o primeiro válido da rede.
+
+Rede B: 192.168.1.0/24 
+deverá ter um roteador wireless como concentrador.
+deverá conter 2 notebooks com placas wireless modelo LinkSys WPC300N, com IP´s estáticos.
+O IP na porta FastEthernet0/1 do roteador1 será o primeiro válido da rede.
+ligar o roteador wireless ao roteador1 pela porta internet do wireless à porta FastEthernet0/1 do rotedor1.
+
+Rede C: 172.16.1.0/16 terá um servidor de páginas WEB na máquina 172.16.1.2/16
+terá um outro servidor de DNS 172.16.1.3/16, a configuração do DNS deve acessar a página 172.16.1.2 com o nome www.senac.edu.br
+deverá ter um switch como concentrador.
+O IP na porta FastEthernet0/0 do roteador2 será o primeiro válido da rede.
+
+O IP na porta FastEthernet0/1 do roteador2 será ligada na porta FastEthernet0/2 do roteador1
